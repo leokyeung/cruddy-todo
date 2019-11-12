@@ -21,39 +21,57 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+  fs.readdir(exports.dataDir, (err, files) => {
+    if (err) {
+      throw ('error');
+    } else {
+      var todoList = files.map((file) => {
+        let item = path.basename(file, '.txt');
+        return {id: item, text: item};
+      });
+      callback(null, todoList);
+    }
   });
-  callback(null, data);
 };
 
 exports.readOne = (id, callback) => {
-  var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
+  let newPath = path.join(exports.dataDir, `${id}.txt`);
+  fs.readFile(newPath, 'utf8', (err, data) => {
+    if (err) {
+      callback(new Error(`No item with id: ${id}`));
+    } else {
+      callback(null, { id: id, text: data });
+    }
+  });
 };
 
 exports.update = (id, text, callback) => {
-  var item = items[id];
-  if (!item) {
-    callback(new Error(`No item with id: ${id}`));
+  let newPath = path.join(exports.dataDir, `${id}.txt`);
+  if (fs.existsSync(newPath)) {
+    fs.writeFile(newPath, text, (err) => {
+      if (err) {
+        callback(new Error(`No item with id: ${id}`));
+      } else {
+        callback(null, {id: id, text: text});
+      }
+    });
   } else {
-    items[id] = text;
-    callback(null, { id, text });
+    callback(new Error(`No item with id: ${id}`));
   }
 };
 
 exports.delete = (id, callback) => {
-  var item = items[id];
-  delete items[id];
-  if (!item) {
-    // report an error if item not found
-    callback(new Error(`No item with id: ${id}`));
+  let newPath = path.join(exports.dataDir, `${id}.txt`);
+  if (fs.existsSync(newPath)) {
+    fs.unlink(newPath, function (err) {
+      if (err) {
+        callback(new Error(`No item with id: ${id}`));
+      } else {
+        callback();
+      }
+    });
   } else {
-    callback();
+    callback(new Error(`No item with id: ${id}`));
   }
 };
 
